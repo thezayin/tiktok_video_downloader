@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "910581639641",
+    "project_id": "tiktok-downloader-70998",
+    "storage_bucket": "tiktok-downloader-70998.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:910581639641:android:f03294a385ab8eb49751c8",
+        "android_client_info": {
+          "package_name": "com.bluelock.tiktokdownloader"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "910581639641-q3akokh2i8giqo3ff0o3lgknmin628vl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAVfeAjBnSH16mIjJg855eZM4ICKJNqMEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "910581639641-q3akokh2i8giqo3ff0o3lgknmin628vl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
