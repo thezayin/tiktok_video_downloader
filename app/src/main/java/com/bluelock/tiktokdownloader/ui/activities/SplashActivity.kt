@@ -79,7 +79,7 @@ class SplashActivity : AppCompatActivity() {
     }
 
     fun navigateToNextScreen() {
-        this?.let {
+        this.let {
             val intent = Intent(it, MainActivity::class.java)
             it.startActivity(intent)
         }
@@ -104,7 +104,5 @@ class SplashActivity : AppCompatActivity() {
         }
         ad.show(this)
         return true
-
-        return false
     }
 }

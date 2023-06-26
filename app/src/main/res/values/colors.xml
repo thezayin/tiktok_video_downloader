@@ -15,10 +15,7 @@
     <color name="mischka">#e6e7e9</color>
     <color name="shuttle_grey">#515357</color>
     <color name="santas_grey">#9d9fa4</color>
-
-
     <color name="secondaryTextColor">#D3CECD</color>
-
     <color name="colorPrimary">#1C1C1C</color>
     <color name="colorPrimaryDark">#000000</color>
     <!--<color name="colorAccent">#D81B60</color>-->
@@ -30,7 +27,6 @@
     <color name="clr_bg">#80232222</color>
     <color name="reset_bg_normal_color">#3a3636</color>
     <color name="reset_bg_pressed_color">#191818</color>
-
     <color name="mainbg">#1D2E5A</color>
     <!--Secondary colors-->
     <color name="colorTranslucent">#50000000</color>
@@ -38,9 +34,6 @@
     <color name="lightGray">#D1D0D0</color>
     <color name="darkBrown">#2B2828</color>
     <color name="ic_logo_bg">#334C5B</color>
-
-
-
 
     <color name="orange">#ff7b25</color>
     <color name="bluishRandom">#6f6acf</color>
@@ -51,15 +44,11 @@
     <color name="btn_color">#61649b</color>
     <color name="successful_color">#c0e0d3</color>
     <color name="background">#f2f2f2</color>
-
     <color name="colorEditText">#fff</color>
-
     <color name="light_gray">#a2a2a2</color>
     <color name="highlight_text_color">#2196F3</color>
     <color name="black_60">#99000000</color>
-
     <color name="primary">#007dc5</color>
-
     <color name="ceulean_two">#007dc5</color>
     <color name="Quaternary_04">#ffd33f</color>
     <color name="Tertiary_04">#f9f9f9</color>
@@ -87,10 +76,8 @@
     <color name="force_black_alpha_10">#1A000000</color>
     <color name="force_oslo_grey">#83868b</color>
     <color name="force_blur_bg">#E67C7C7C</color>
-
     <color name="dashboard_bg">#FFF</color>
     <color name="white_0">#1AFFFFFF</color>
-
     <color name="nevada">#6a6c71</color>
     <color name="catskill_white">#e5e9f2</color>
     <color name="daintree">#00273d</color>
@@ -105,7 +92,6 @@
     <color name="progress_bar_background">#303134</color>
     <color name="abbey">#414245</color>
     <color name="white_ssdob">#FFFFFF</color>
-
     <color name="iron">#d2d3d5</color>
     <color name="dashboard_iron">#d2d3d5</color>
     <color name="geyser">#d8dde6</color>
@@ -113,7 +99,6 @@
     <color name="concrete_ssdob">#f3f3f3</color>
     <color name="concrete_dashboard">#f3f3f3</color>
     <color name="alabaster">#f9f9f9</color>
-
     <color name="mountain_meadow">#16db93</color>
     <color name="bright_sun">#ffd33f</color>
     <color name="maroon">#7b0a00</color>

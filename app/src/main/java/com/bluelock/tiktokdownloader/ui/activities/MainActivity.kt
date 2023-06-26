@@ -87,7 +87,11 @@ class MainActivity : AppCompatActivity(), ItemClickListener {
         observe()
         getReceivedData()
         showNativeAd()
-
+        if (remoteConfig.showTitle) {
+            binding.subtitle.visibility = View.VISIBLE
+        } else {
+            binding.subtitle.visibility = View.INVISIBLE
+        }
 
     }
 
@@ -134,6 +138,7 @@ class MainActivity : AppCompatActivity(), ItemClickListener {
                 }
 
             }
+
             btnSetting.setOnClickListener {
                 showInterstitialAd {
                     val intent = Intent(this@MainActivity, SettingActivity::class.java)
@@ -448,6 +453,8 @@ class MainActivity : AppCompatActivity(), ItemClickListener {
                 }
                 ad.show(this)
             }
+        }else{
+            callback.invoke()
         }
     }
 
@@ -455,7 +462,7 @@ class MainActivity : AppCompatActivity(), ItemClickListener {
         if (remoteConfig.nativeAd) {
             nativeAd = googleManager.createNativeAdSmall()
 
-            Log.d("jeje_ads",nativeAd.toString())
+            Log.d("jeje_ads", nativeAd.toString())
             nativeAd?.let {
                 val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
                 nativeAdLayoutBinding.nativeAdView.loadNativeAd(ad = it)

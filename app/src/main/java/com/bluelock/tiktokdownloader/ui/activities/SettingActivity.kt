@@ -50,6 +50,12 @@ class SettingActivity : AppCompatActivity() {
 
         observer()
         showNativeAd()
+
+        if (remoteConfig.showTitle) {
+            binding.textView.visibility = View.VISIBLE
+        } else {
+            binding.textView.visibility = View.INVISIBLE
+        }
     }
 
     private fun observer() {
@@ -57,13 +63,28 @@ class SettingActivity : AppCompatActivity() {
             binding.apply {
                 btnBack.setOnClickListener {
                     showInterstitialAd {
-                       finish()
+                        finish()
                     }
                 }
+                lTerm.setOnClickListener {
+                    intent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://bluelocksolutions.blogspot.com/2023/06/terms-and-conditions-for-tiktok.html")
+                    )
+                    startActivity(intent)
+                }
+                lPrivacy.setOnClickListener {
+                    intent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://bluelocksolutions.blogspot.com/2023/06/tiktok-downloader.html")
+                    )
+                    startActivity(intent)
+                }
+
                 lContact.setOnClickListener {
                     val emailIntent = Intent(
                         Intent.ACTION_SENDTO,
-                        Uri.parse("mailto:zainshahidbuttt@gamail.com")
+                        Uri.parse("mailto:blue.lock.testing@gamail.com")
                     )
                     emailIntent.putExtra(Intent.EXTRA_SUBJECT, "FB Reel Downloader")
                     emailIntent.putExtra(Intent.EXTRA_TEXT, "your message here")
@@ -77,7 +98,7 @@ class SettingActivity : AppCompatActivity() {
                         var shareMessage = "\nLet me recommend you this application\n\n"
                         shareMessage =
                             """
-                            ${shareMessage + "https://play.google.com/store/apps/details?id=" + BuildConfig.APPLICATION_ID}
+                            ${shareMessage + "https://play.google.com/store/apps/details?id=com.bluelock.tiktokdownloader"}
                             """.trimIndent()
                         shareIntent.putExtra(Intent.EXTRA_TEXT, shareMessage)
                         startActivity(Intent.createChooser(shareIntent, "choose one"))
@@ -116,6 +137,8 @@ class SettingActivity : AppCompatActivity() {
                 }
                 ad.show(this)
             }
+        }else{
+            callback.invoke()
         }
     }
 
