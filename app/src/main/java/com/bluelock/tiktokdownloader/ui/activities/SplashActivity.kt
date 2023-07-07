@@ -2,18 +2,19 @@ package com.bluelock.tiktokdownloader.ui.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bluelock.tiktokdownloader.databinding.SplashActivityBinding
 import com.bluelock.tiktokdownloader.remote.RemoteConfig
-import com.bluelock.tiktokdownloader.utils.isConnected
+import com.bluelock.tiktokdownloader.util.isConnected
 import com.example.ads.GoogleManager
+import com.example.ads.newStrategy.types.GoogleInterstitialType
 import com.example.analytics.dependencies.Analytics
 import com.example.analytics.events.AnalyticsEvent
 import com.example.analytics.qualifiers.GoogleAnalytics
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.interstitial.InterstitialAd
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -66,10 +67,14 @@ class SplashActivity : AppCompatActivity() {
                                         status = "open_app_ad_not_load"
                                     )
                                 )
-                                navigateToNextScreen()
+                                showInterstitialAd {
+                                    navigateToNextScreen()
+                                }
                             }
                         } else {
-                            navigateToNextScreen()
+                            showInterstitialAd {
+                                navigateToNextScreen()
+                            }
                         }
                         break
                     }
@@ -104,5 +109,30 @@ class SplashActivity : AppCompatActivity() {
         }
         ad.show(this)
         return true
+    }
+
+    private fun showInterstitialAd(callback: () -> Unit) {
+
+        val ad: InterstitialAd? =
+            googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
+
+        if (ad == null) {
+            callback.invoke()
+            return
+        } else {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    super.onAdDismissedFullScreenContent()
+                    callback.invoke()
+                }
+
+                override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                    super.onAdFailedToShowFullScreenContent(error)
+                    callback.invoke()
+                }
+            }
+            ad.show(this)
+        }
+
     }
 }

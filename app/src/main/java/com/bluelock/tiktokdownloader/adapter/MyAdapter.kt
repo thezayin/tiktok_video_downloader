@@ -6,8 +6,8 @@ import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.RecyclerView
 import com.bluelock.tiktokdownloader.databinding.VideoItemBinding
+import com.bluelock.tiktokdownloader.interfaces.ItemClickListener
 import com.bumptech.glide.Glide
-import com.bluelock.tiktokdownloader.utils.ItemClickListener
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
@@ -47,7 +47,10 @@ class MyAdapter(private val fileList: ArrayList<File>, private val listener: Ite
 
     override fun getItemCount(): Int = fileList.size
     fun getDate(milliSeconds: Long): String? {
+        // Create a DateFormatter object for displaying date in specified format.
         val formatter = SimpleDateFormat(format)
+
+        // Create a calendar object that will convert the date and time value in milliseconds to date.
         val calendar: Calendar = Calendar.getInstance()
         calendar.timeInMillis = milliSeconds
         return formatter.format(calendar.time)
