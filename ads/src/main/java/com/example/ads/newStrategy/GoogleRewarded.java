@@ -20,7 +20,7 @@ public class GoogleRewarded {
 
     private final int totalLevels = 4;
     private ArrayList<ArrayList<Object>> adUnits;
-    private final String adUnitId = "ca-app-pub-9507635869843997/8043813148";
+    private final String adUnitId = "ca-app-pub-9507635869843997/7812675012";
 
     public GoogleRewarded(Context context) {
         instantiateList();

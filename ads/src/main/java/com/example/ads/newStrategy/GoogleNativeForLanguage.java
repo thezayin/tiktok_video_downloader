@@ -24,7 +24,6 @@ public class GoogleNativeForLanguage {
     private ArrayList<ArrayList<Object>> adUnits;
     private final String adUnitId = "ca-app-pub-9507635869843997/7812675012";
 
-
     public GoogleNativeForLanguage(Context context) {
         instantiateList();
         loadnativead(context);

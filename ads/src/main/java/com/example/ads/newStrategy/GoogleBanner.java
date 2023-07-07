@@ -23,8 +23,8 @@ public class GoogleBanner {
 
     private static final String TAG = "GoogleBanner";
 
+    public static final String BANNER_TEST = "ca-app-pub-9507635869843997/7328269912";
     public static final String BANNER_ALL = "ca-app-pub-9507635869843997/6882736728";
-
 
     private final String adUnitId = "ca-app-pub-9507635869843997/6882736728";
 

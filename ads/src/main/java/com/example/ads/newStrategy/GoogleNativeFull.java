@@ -22,7 +22,6 @@ public class GoogleNativeFull {
     private ArrayList<ArrayList<Object>> adUnits;
 
     private final String adUnitId = "ca-app-pub-9507635869843997/7812675012";
-
     public GoogleNativeFull(Context context) {
         instantiateList();
         loadnativead(context);
