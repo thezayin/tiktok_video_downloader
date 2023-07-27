@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Tik Tok Downloader</string>
+    <string name="app_name">TikTok Downloader</string>
     !--api links-->
     <string name="download_started">Download Started</string>
     <string name="enter_url">Enter Url</string>

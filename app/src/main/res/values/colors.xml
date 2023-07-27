@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="back_ground">#f3f3f3</color>
+    <color name="text_color">#0f1011</color>
+    <color name="icon_color">#0f1011</color>
+    <color name="card_color">#FFF</color>
+    <color name="btn_color">#f45b69</color>
+    <color name="grey_level_1">#646464</color>
+
+    <color name="ad_color">#393939</color>
+
+
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -41,7 +51,6 @@
     <color name="bluish">#80ced6</color>
     <color name="brown">#a96e5b</color>
     <color name="light_blue">#bfe2fe</color>
-    <color name="btn_color">#61649b</color>
     <color name="successful_color">#c0e0d3</color>
     <color name="background">#f2f2f2</color>
     <color name="colorEditText">#fff</color>
@@ -144,7 +153,7 @@
     <color name="bright_blue">#006fff</color>
     <color name="greenish_turquoise">#00ffac</color>
     <color name="sun_yellow">#ffd622</color>
-    <color name="sun_yellow_qr">#ffd622</color>
+
     <color name="bright_lavender_qr">#ce51ff</color>
     <color name="force_sun_yellow_qr">#ffd622</color>
     <color name="force_bright_lavender_qr">#ce51ff</color>

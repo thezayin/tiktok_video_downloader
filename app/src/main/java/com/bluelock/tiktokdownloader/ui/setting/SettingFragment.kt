@@ -6,7 +6,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bluelock.tiktokdownloader.R
 import com.bluelock.tiktokdownloader.databinding.FragmentSettingBinding
@@ -24,6 +26,8 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,13 +51,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
 
     override fun onCreatedView() {
         observer()
-        showNativeAd()
-        showDropDown()
-        if (remoteConfig.showTitle) {
-            binding.textView.visibility = View.VISIBLE
-        } else {
-            binding.textView.visibility = View.INVISIBLE
-        }
+        showRecursiveAds()
     }
 
     private fun observer() {
@@ -175,6 +173,22 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                 binding.dropLayout.visibility = View.GONE
             }
             binding.btnDropUp.visibility = View.INVISIBLE
+        }
+    }
+
+    private fun showRecursiveAds() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (this.isActive) {
+                    showNativeAd()
+                    if (remoteConfig.nativeAd) {
+                        showNativeAd()
+                        showDropDown()
+                        showInterstitialAd { }
+                    }
+                    delay(15000L)
+                }
+            }
         }
     }
 

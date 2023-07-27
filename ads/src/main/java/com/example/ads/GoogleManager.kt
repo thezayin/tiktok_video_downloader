@@ -2,29 +2,20 @@ package com.example.ads
 
 
 import android.content.Context
-import androidx.viewbinding.BuildConfig
 import com.example.ads.newStrategy.GoogleAppOpen
-import com.example.ads.newStrategy.GoogleBanner
 import com.example.ads.newStrategy.GoogleInterstitial
-import com.example.ads.newStrategy.GoogleInterstitialReward
-import com.example.ads.newStrategy.GoogleNativeForLanguage
-import com.example.ads.newStrategy.GoogleNativeForProcessing
-import com.example.ads.newStrategy.GoogleNativeForSave
 import com.example.ads.newStrategy.GoogleNativeFull
-import com.example.ads.newStrategy.GoogleNativeHome
 import com.example.ads.newStrategy.GoogleNativeSmall
 import com.example.ads.newStrategy.GoogleRewarded
 import com.example.ads.newStrategy.types.GoogleInterstitialType
 import com.example.ads.newStrategy.types.GoogleRewardedType
 import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.rewarded.RewardedAd
-import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,12 +29,6 @@ class GoogleManager @Inject constructor(
     private var googleAppOpen: GoogleAppOpen? = null
     private var googleNativeFull: GoogleNativeFull? = null
     private var googleRewarded: GoogleRewarded? = null
-    private var googleNativeForLanguage: GoogleNativeForLanguage? = null
-    private var googleNativeForProcessing: GoogleNativeForProcessing? = null
-    private var googleNativeForSave: GoogleNativeForSave? = null
-    private var googleNativeHome: GoogleNativeHome? = null
-    private var googleInterstitialReward: GoogleInterstitialReward? = null
-    private var googleBanner: GoogleBanner? = null
 
 
     private val testDeviceIds: List<String> = listOf(
@@ -68,13 +53,8 @@ class GoogleManager @Inject constructor(
         googleAppOpen = GoogleAppOpen(context);
         googleNativeFull = GoogleNativeFull(context)
         googleRewarded = GoogleRewarded(context)
-        googleNativeForLanguage = GoogleNativeForLanguage(context)
-        googleNativeForProcessing = GoogleNativeForProcessing(context)
-        googleNativeForSave =
-            GoogleNativeForSave(context)
-        googleNativeHome = GoogleNativeHome(context)
-        googleBanner = GoogleBanner(context)
-        googleInterstitialReward = GoogleInterstitialReward(context)
+
+
     }
 
     fun createRewardedAd(type: GoogleRewardedType? = null): RewardedAd? {
@@ -86,10 +66,6 @@ class GoogleManager @Inject constructor(
         } else {
             return googleRewarded?.getDefaultAd(context);
         }
-    }
-
-    fun createInterstitialRewardAd(): RewardedInterstitialAd? {
-        return googleInterstitialReward?.getDefaultAd(context)
     }
 
     fun createInterstitialAd(type: GoogleInterstitialType): InterstitialAd? {
@@ -122,24 +98,7 @@ class GoogleManager @Inject constructor(
         return googleAppOpen?.getAd(context);
     }
 
-    fun createNativeAdForLanguage(): NativeAd? {
-        return googleNativeForLanguage?.getDefaultAd(context)
-    }
 
-    fun createNativeAdForHome(): NativeAd? {
-        return googleNativeHome?.getDefaultAd(context)
-    }
 
-    fun createNativeAdForProcessing(): NativeAd? {
-        return googleNativeForProcessing?.getDefaultAd(context)
-    }
-
-    fun createNativeAdForSave(): NativeAd? {
-        return googleNativeForSave?.getDefaultAd(context)
-    }
-
-    fun createBannerAd(): AdView? {
-        return googleBanner?.getDefaultAd(context)
-    }
 
 }
