@@ -18,9 +18,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@Suppress("UNREACHABLE_CODE")
 @AndroidEntryPoint
 class SplashActivity : AppCompatActivity() {
-    lateinit var binding: SplashActivityBinding
+    private lateinit var binding: SplashActivityBinding
 
     private var progressStatus = 0
 
@@ -50,7 +51,7 @@ class SplashActivity : AppCompatActivity() {
                     } else {
                         if (remoteConfig.showAppOpenAd) {
                             if (getAppOpenAd()) {
-                                Log.d("jejesplash", "done")
+                                Log.d("jeje_splash", "done")
                             } else {
                                 showInterstitialAd {
                                     navigateToNextScreen()

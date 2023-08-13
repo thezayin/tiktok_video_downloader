@@ -6,11 +6,10 @@ import com.bluelock.tiktokdownloader.data.remote.TiktokApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class TikTokRepositoryImpl(val api: TiktokApi) : ApiRepository {
+class TikTokRepositoryImpl(private val api: TiktokApi) : ApiRepository {
 
     private lateinit var listener: ApiResponse
 
-    //    val res = Gson().fromJson(t.get("data").asJsonObject.get("play"),String::class.java)
     override suspend fun getVideoData(videoUrl: String) {
             val response = api.getDownloadUrls(videoUrl)
 

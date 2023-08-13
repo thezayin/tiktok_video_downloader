@@ -1,8 +1,8 @@
 package com.bluelock.tiktokdownloader.ui.download
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -94,6 +94,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private suspend fun refreshFiles() {
         fileList.clear()
         rootFile.listFiles()?.let { f ->
@@ -110,25 +111,25 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
 
     override fun onItemClicked(file: File) {
-        showRewardedAd {
-            val uri =
-                FileProvider.getUriForFile(
-                    requireActivity(),
-                    requireActivity().applicationContext.packageName + ".provider",
-                    file
-                );
+        showRewardedAd {}
+        val uri =
+            FileProvider.getUriForFile(
+                requireActivity(),
+                requireActivity().applicationContext.packageName + ".provider",
+                file
+            )
 
-            Intent().apply {
-                action = Intent.ACTION_VIEW
-                setDataAndType(uri, requireActivity().contentResolver.getType(uri))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                startActivity(this)
-            }
+        Intent().apply {
+            action = Intent.ACTION_VIEW
+            setDataAndType(uri, requireActivity().contentResolver.getType(uri))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(this)
         }
+
     }
 
     private fun showNativeAd() {
-        if (remoteConfig.nativeAd) {
+        if (remoteConfig.showDropDownAd) {
             nativeAd = googleManager.createNativeAdSmall()
             nativeAd?.let {
                 val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
@@ -142,11 +143,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     private fun showDropDown() {
         val nativeAdCheck = googleManager.createNativeFull()
-        val nativeAd = googleManager.createNativeFull()
-        Log.d("ggg_nul", "nativeAd:${nativeAdCheck}")
-
         nativeAdCheck?.let {
-            Log.d("ggg_lest", "nativeAdEx:${nativeAd}")
             binding.apply {
                 dropLayout.bringToFront()
                 nativeViewDrop.bringToFront()
@@ -167,7 +164,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     }
 
     private fun showInterstitialAd(callback: () -> Unit) {
-        if (remoteConfig.showInterstitial) {
+        if (remoteConfig.showDropDownAd) {
             val ad: InterstitialAd? =
                 googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 
@@ -210,33 +207,29 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     }
 
     private fun showRewardedAd(callback: () -> Unit) {
-        if (remoteConfig.showInterstitial) {
+        if (remoteConfig.showDropDownAd) {
 
             if (!requireActivity().isConnected()) {
                 callback.invoke()
                 return
             }
-            if (true) {
-                val ad: RewardedAd? =
-                    googleManager.createRewardedAd()
+            val ad: RewardedAd? =
+                googleManager.createRewardedAd()
 
-                if (ad == null) {
-                    callback.invoke()
-                } else {
-                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            if (ad == null) {
+                callback.invoke()
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
 
-                        override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                            super.onAdFailedToShowFullScreenContent(error)
-                            callback.invoke()
-                        }
-                    }
-
-                    ad.show(requireActivity()) {
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
                         callback.invoke()
                     }
                 }
-            } else {
-                callback.invoke()
+
+                ad.show(requireActivity()) {
+                    callback.invoke()
+                }
             }
         } else {
             callback.invoke()
