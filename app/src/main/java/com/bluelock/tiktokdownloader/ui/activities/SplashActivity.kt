@@ -31,6 +31,8 @@ class SplashActivity : AppCompatActivity() {
     @Inject
     lateinit var remoteConfig: RemoteConfig
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = SplashActivityBinding.inflate(layoutInflater)

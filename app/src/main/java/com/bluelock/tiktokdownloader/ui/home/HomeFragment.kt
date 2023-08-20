@@ -83,6 +83,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     @Inject
     lateinit var remoteConfig: RemoteConfig
 
+
     lateinit var downloadingDialog: BottomSheetDialog
 
     lateinit var successDialog: BottomSheetDialog
@@ -102,10 +103,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
         observe()
         initUI()
         showConsent()
-        lifecycleScope.launch {
-            delay(3000)
-            showDropDown()
-        }
     }
 
     private fun showConsent() {
@@ -182,8 +179,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                                 })
 
                                 lifecycleScope.launch(Dispatchers.IO) {
-
-
                                     val finished =
                                         async { saveVideo(resource, it, requireActivity()) }
                                     val state = finished.await()
@@ -222,7 +217,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
                                             btnOk?.setOnClickListener {
                                                 successDialog.dismiss()
-                                                showRewardedAd {}
+                                                showInterstitialAd {}
 
                                             }
                                             btnClose?.setOnClickListener {
@@ -238,7 +233,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                                         val dialog = BottomSheetDialog(requireActivity())
                                         dialog.setContentView(R.layout.dialog_bottom_video_not_found)
                                         val btnOk = dialog.findViewById<Button>(R.id.btn_clear)
-
+                                        val btnCross = dialog.findViewById<ImageView>(R.id.ivCross)
                                         val adView =
                                             dialog.findViewById<FrameLayout>(R.id.nativeViewNot)
                                         if (remoteConfig.showDropDownAd) {
@@ -257,9 +252,15 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
                                         dialog.behavior.isDraggable = false
 
-                                        btnOk?.setOnClickListener {
-                                            showRewardedAd { }
+                                        btnCross?.setOnClickListener {
                                             dialog.dismiss()
+                                            showInterstitialAd {}
+
+                                        }
+                                        btnOk?.setOnClickListener {
+                                            dialog.dismiss()
+                                            showInterstitialAd {}
+
                                         }
 
                                         dialog.show()
@@ -281,22 +282,19 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     private fun initUI() {
         binding.apply {
             ivCross.setOnClickListener {
-                showInterstitialAd {
-                    etLink.text = null
-                }
+                etLink.text = null
+                showInterstitialAd {}
             }
 
             btnDownloaded.setOnClickListener {
-                showRewardedAd {
-                    findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToDownloadedFragment())
-                }
+                findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToDownloadedFragment())
+
             }
 
             btnSetting.setOnClickListener {
-                showRewardedAd {
-                    findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSettingFragment())
-                }
+                findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSettingFragment())
             }
+
             etLink.addTextChangedListener(object : TextWatcher {
                 override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                     if (s.toString().trim { it <= ' ' }.isEmpty()) {
@@ -322,6 +320,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
 
             btnDownload.setOnClickListener {
+                showInterstitialAd { }
                 val ll = etLink.text.toString().trim { it <= ' ' }
                 analytics.logEvent(
                     AnalyticsEvent.LINK(
@@ -365,12 +364,6 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                         requireActivity(), "Enter Valid Url!!", Toast.LENGTH_SHORT
                     ).show()
                 }
-
-                analytics.logEvent(
-                    AnalyticsEvent.BTNDownload(
-                        status = "Clicked"
-                    )
-                )
             }
         }
     }
@@ -395,9 +388,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             dialog.behavior.isDraggable = false
             dialog.setCanceledOnTouchOutside(false)
             videoQualityTv?.setOnClickListener {
-                showRewardedAd {}
-                dialog.dismiss()
-                myViewModel.getVideoData(link)
+                showRewardedAd {
+                    dialog.dismiss()
+                    myViewModel.getVideoData(link)
+                }
             }
             dialog.show()
         }
@@ -426,34 +420,40 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     }
 
     private fun showInterstitialAd(callback: () -> Unit) {
-        if (remoteConfig.showDropDownAd) {
-            return
-        }
-        val ad: InterstitialAd? = googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
+        if (remoteConfig.showInterstitial) {
 
-        if (ad == null) {
-            callback.invoke()
-            return
-        } else {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    super.onAdDismissedFullScreenContent()
-                    callback.invoke()
-                }
 
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    super.onAdFailedToShowFullScreenContent(error)
-                    callback.invoke()
+            val ad: InterstitialAd? =
+                googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
+
+            if (ad == null) {
+                Log.d("jeje_inter_null", "null")
+                callback.invoke()
+                return
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        super.onAdDismissedFullScreenContent()
+                        Log.d("jeje_ondismiss", "null")
+                        callback.invoke()
+                    }
+
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
+                        Log.d("jeje_inter_fail", "null")
+                        callback.invoke()
+                    }
                 }
+                ad.show(requireActivity())
             }
-            ad.show(requireActivity())
+        } else {
+            callback.invoke()
         }
 
     }
 
     private fun showRewardedAd(callback: () -> Unit) {
         if (remoteConfig.showDropDownAd) {
-
             if (!requireActivity().isConnected()) {
                 callback.invoke()
                 return

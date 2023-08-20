@@ -111,21 +111,21 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
 
     override fun onItemClicked(file: File) {
-        showRewardedAd {}
-        val uri =
-            FileProvider.getUriForFile(
-                requireActivity(),
-                requireActivity().applicationContext.packageName + ".provider",
-                file
-            )
+        showRewardedAd {
+            val uri =
+                FileProvider.getUriForFile(
+                    requireActivity(),
+                    requireActivity().applicationContext.packageName + ".provider",
+                    file
+                )
 
-        Intent().apply {
-            action = Intent.ACTION_VIEW
-            setDataAndType(uri, requireActivity().contentResolver.getType(uri))
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            startActivity(this)
+            Intent().apply {
+                action = Intent.ACTION_VIEW
+                setDataAndType(uri, requireActivity().contentResolver.getType(uri))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                startActivity(this)
+            }
         }
-
     }
 
     private fun showNativeAd() {
@@ -200,7 +200,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
                         showDropDown()
                         showInterstitialAd { }
                     }
-                    delay(15000L)
+                    delay(40000L)
                 }
             }
         }
@@ -237,7 +237,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     }
 
     override fun onDestroyedView() {
-        showInterstitialAd { }
+//jeje_null
     }
 
 }

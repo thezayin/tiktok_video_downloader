@@ -26,7 +26,6 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
-import com.google.android.gms.ads.rewarded.RewardedAd
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -54,17 +53,18 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
     override fun onCreatedView() {
         observer()
         showRecursiveAds()
+        getAppOpenAd()
     }
 
     private fun observer() {
         lifecycleScope.launch {
             binding.apply {
                 btnBack.setOnClickListener {
-                    showInterstitialAd {  }
                     findNavController().navigateUp()
                 }
+
                 lTerm.setOnClickListener {
-                    showRewardedAd {  }
+                    showInterstitialAd { }
                     val intent = Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse("https://bluelocksolutions.blogspot.com/2023/06/terms-and-conditions-for-tiktok.html")
@@ -72,7 +72,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     startActivity(intent)
                 }
                 lPrivacy.setOnClickListener {
-                    showRewardedAd {  }
+                    showInterstitialAd { }
                     val intent = Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse("https://bluelocksolutions.blogspot.com/2023/06/tiktok-downloader.html")
@@ -81,7 +81,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                 }
 
                 lContact.setOnClickListener {
-                    showRewardedAd {  }
+                    showInterstitialAd { }
                     val emailIntent = Intent(
                         Intent.ACTION_SENDTO,
                         Uri.parse("mailto:blue.lock.testing@gamail.com")
@@ -91,7 +91,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     startActivity(Intent.createChooser(emailIntent, "Chooser Title"))
                 }
                 lShare.setOnClickListener {
-                    showRewardedAd {  }
+                    showInterstitialAd { }
                     try {
                         val shareIntent = Intent(Intent.ACTION_SEND)
                         shareIntent.type = "text/plain"
@@ -111,6 +111,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
             }
         }
     }
+
     private fun showInterstitialAd(callback: () -> Unit) {
         if (remoteConfig.showDropDownAd) {
             val ad: InterstitialAd? =
@@ -176,35 +177,6 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
             binding.btnDropUp.visibility = View.INVISIBLE
         }
     }
-    private fun showRewardedAd(callback: () -> Unit) {
-        if (remoteConfig.showDropDownAd) {
-
-            if (!requireActivity().isConnected()) {
-                callback.invoke()
-                return
-            }
-            val ad: RewardedAd? =
-                googleManager.createRewardedAd()
-
-            if (ad == null) {
-                callback.invoke()
-            } else {
-                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-
-                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                        super.onAdFailedToShowFullScreenContent(error)
-                        callback.invoke()
-                    }
-                }
-
-                ad.show(requireActivity()) {
-                    callback.invoke()
-                }
-            }
-        } else {
-            callback.invoke()
-        }
-    }
 
     private fun showRecursiveAds() {
         lifecycleScope.launch {
@@ -216,14 +188,34 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                         showDropDown()
                         showInterstitialAd { }
                     }
-                    delay(15000L)
+                    delay(40000L)
                 }
             }
         }
     }
 
+    private fun getAppOpenAd(): Boolean {
+
+        if (!requireActivity().isConnected()) return false
+        val ad = googleManager.createAppOpenAd() ?: return false
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                super.onAdDismissedFullScreenContent()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+                super.onAdFailedToShowFullScreenContent(p0)
+            }
+        }
+        ad.show(requireActivity())
+        return true
+
+        return false
+    }
+
     override fun onDestroyedView() {
-        showInterstitialAd { }
+//        showInterstitialAd { }
     }
 
 }
