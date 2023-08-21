@@ -1,4 +1,4 @@
-package com.example.tiktokdownloaderdemo.viewmodels
+package com.bluelock.tiktokdownloader.viewmodels
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

@@ -1,14 +1,16 @@
 package com.bluelock.tiktokdownloader.ui.download
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bluelock.tiktokdownloader.adapter.MyAdapter
@@ -16,6 +18,7 @@ import com.bluelock.tiktokdownloader.databinding.FragmentDownloadedBinding
 import com.bluelock.tiktokdownloader.interfaces.ItemClickListener
 import com.bluelock.tiktokdownloader.remote.RemoteConfig
 import com.bluelock.tiktokdownloader.ui.base.BaseFragment
+import com.bluelock.tiktokdownloader.util.isConnected
 import com.bluelock.tiktokdownloader.util.rootFile
 import com.example.ads.GoogleManager
 import com.example.ads.databinding.MediumNativeAdLayoutBinding
@@ -28,8 +31,11 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.rewarded.RewardedAd
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -55,11 +61,11 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     private var fileList: ArrayList<File> = ArrayList()
     private lateinit var myAdapter: MyAdapter
+
     override fun onCreatedView() {
         initRecyclerView()
         lifecycleScope.launch(Dispatchers.IO) { refreshFiles() }
-        showNativeAd()
-        showDropDown()
+        showRecursiveAds()
         initView()
     }
 
@@ -88,6 +94,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private suspend fun refreshFiles() {
         fileList.clear()
         rootFile.listFiles()?.let { f ->
@@ -104,13 +111,13 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
 
     override fun onItemClicked(file: File) {
-        showInterstitialAd {
+        showRewardedAd {
             val uri =
                 FileProvider.getUriForFile(
                     requireActivity(),
                     requireActivity().applicationContext.packageName + ".provider",
                     file
-                );
+                )
 
             Intent().apply {
                 action = Intent.ACTION_VIEW
@@ -122,7 +129,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     }
 
     private fun showNativeAd() {
-        if (remoteConfig.nativeAd) {
+        if (remoteConfig.showDropDownAd) {
             nativeAd = googleManager.createNativeAdSmall()
             nativeAd?.let {
                 val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
@@ -136,11 +143,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
 
     private fun showDropDown() {
         val nativeAdCheck = googleManager.createNativeFull()
-        val nativeAd = googleManager.createNativeFull()
-        Log.d("ggg_nul", "nativeAd:${nativeAdCheck}")
-
         nativeAdCheck?.let {
-            Log.d("ggg_lest", "nativeAdEx:${nativeAd}")
             binding.apply {
                 dropLayout.bringToFront()
                 nativeViewDrop.bringToFront()
@@ -161,7 +164,7 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
     }
 
     private fun showInterstitialAd(callback: () -> Unit) {
-        if (remoteConfig.showInterstitial) {
+        if (remoteConfig.showDropDownAd) {
             val ad: InterstitialAd? =
                 googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 
@@ -187,8 +190,54 @@ class DownloadedFragment : BaseFragment<FragmentDownloadedBinding>(), ItemClickL
         }
     }
 
+    private fun showRecursiveAds() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (this.isActive) {
+                    showNativeAd()
+                    if (remoteConfig.nativeAd) {
+                        showNativeAd()
+                        showDropDown()
+                        showInterstitialAd { }
+                    }
+                    delay(40000L)
+                }
+            }
+        }
+    }
+
+    private fun showRewardedAd(callback: () -> Unit) {
+        if (remoteConfig.showDropDownAd) {
+
+            if (!requireActivity().isConnected()) {
+                callback.invoke()
+                return
+            }
+            val ad: RewardedAd? =
+                googleManager.createRewardedAd()
+
+            if (ad == null) {
+                callback.invoke()
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
+                        callback.invoke()
+                    }
+                }
+
+                ad.show(requireActivity()) {
+                    callback.invoke()
+                }
+            }
+        } else {
+            callback.invoke()
+        }
+    }
+
     override fun onDestroyedView() {
-        showInterstitialAd { }
+//jeje_null
     }
 
 }

@@ -15,8 +15,10 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bluelock.tiktokdownloader.R
 import com.bluelock.tiktokdownloader.databinding.FragmentHomeBinding
@@ -25,8 +27,10 @@ import com.bluelock.tiktokdownloader.remote.RemoteConfig
 import com.bluelock.tiktokdownloader.ui.base.BaseFragment
 import com.bluelock.tiktokdownloader.util.State
 import com.bluelock.tiktokdownloader.util.Utils
+import com.bluelock.tiktokdownloader.util.isConnected
 import com.bluelock.tiktokdownloader.util.rootFile
 import com.bluelock.tiktokdownloader.util.saveVideo
+import com.bluelock.tiktokdownloader.viewmodels.MyViewModel
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -38,22 +42,27 @@ import com.example.ads.ui.binding.loadNativeAd
 import com.example.analytics.dependencies.Analytics
 import com.example.analytics.events.AnalyticsEvent
 import com.example.analytics.qualifiers.GoogleAnalytics
-import com.example.tiktokdownloaderdemo.viewmodels.MyViewModel
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
+import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.ump.ConsentForm
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 import kotlin.system.exitProcess
 
+@Suppress("LABEL_NAME_CLASH", "NAME_SHADOWING")
 @AndroidEntryPoint
 class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     override val bindingInflater: (LayoutInflater, ViewGroup?, Boolean) -> FragmentHomeBinding =
@@ -61,8 +70,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
     private lateinit var myViewModel: MyViewModel
     private val permission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-        }
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
     private var nativeAd: NativeAd? = null
 
     @Inject
@@ -75,24 +83,56 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     @Inject
     lateinit var remoteConfig: RemoteConfig
 
+
     lateinit var downloadingDialog: BottomSheetDialog
+
+    lateinit var successDialog: BottomSheetDialog
+    private lateinit var consentInformation: ConsentInformation
+    private lateinit var csForm: ConsentForm
 
     override fun onCreatedView() {
         permission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         myViewModel = ViewModelProvider(this)[MyViewModel::class.java]
 
         requireActivity().onBackPressedDispatcher.addCallback(this) {
-            requireActivity().finish();
-            exitProcess(0);
+            requireActivity().finish()
+            exitProcess(0)
         }
 
-        showNativeAd()
+        showRecursiveAds()
         observe()
         initUI()
-        lifecycleScope.launch {
-            delay(3000)
-            showDropDown()
-        }
+        showConsent()
+    }
+
+    private fun showConsent() {
+        val params = ConsentRequestParameters.Builder().setTagForUnderAgeOfConsent(false).build()
+
+        consentInformation = UserMessagingPlatform.getConsentInformation(requireActivity())
+        consentInformation.requestConsentInfoUpdate(requireActivity(), params, {
+            if (consentInformation.isConsentFormAvailable) {
+                loadForm()
+            }
+        }, {
+            // Handle the error.
+        })
+    }
+
+    private fun loadForm() {
+        UserMessagingPlatform.loadConsentForm(requireActivity(), {
+            csForm = it
+            if (consentInformation.consentStatus == ConsentInformation.ConsentStatus.REQUIRED) {
+                csForm.show(
+                    requireActivity()
+                ) {
+                    if (consentInformation.consentStatus == ConsentInformation.ConsentStatus.OBTAINED) {
+                    }
+                    loadForm()
+                }
+            }
+        }, {
+            // Handle the error.
+        })
     }
 
     override fun onDestroyedView() {
@@ -101,19 +141,19 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
     private fun observe() {
         binding.apply {
-            myViewModel.responseLiveData.observe(requireActivity()) {
+            myViewModel.responseLiveData.observe(requireActivity()) { it ->
                 if (checkIfFileExist(it)) {
                     Toast.makeText(requireActivity(), "File Already Exist", Toast.LENGTH_SHORT)
                         .show()
                     return@observe
                 }
-                lifecycleScope.launch {
+                lifecycleScope.launch(Dispatchers.Main) {
 
                     downloadingDialog = BottomSheetDialog(requireActivity(), R.style.SheetDialog)
                     downloadingDialog.setContentView(R.layout.dialog_downloading)
                     val adView =
                         downloadingDialog.findViewById<FrameLayout>(R.id.nativeViewAdDownload)
-                    if (remoteConfig.nativeAd) {
+                    if (remoteConfig.showDropDownAd) {
                         nativeAd = googleManager.createNativeAdSmall()
                         nativeAd?.let {
                             val nativeAdLayoutBinding =
@@ -132,32 +172,33 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     Glide.with(requireActivity()).asFile().load(it.videoUrl)
                         .into(object : CustomTarget<File>() {
                             override fun onResourceReady(
-                                resource: File,
-                                transition: Transition<in File>?
+                                resource: File, transition: Transition<in File>?
                             ) {
+                                requireActivity().runOnUiThread(Runnable {
+                                    etLink.text = null
+                                })
 
                                 lifecycleScope.launch(Dispatchers.IO) {
                                     val finished =
                                         async { saveVideo(resource, it, requireActivity()) }
                                     val state = finished.await()
                                     if (state is State.COMPLETE) {
+                                        downloadingDialog.dismiss()
+                                        delay(100)
 
-
-                                        withContext(Dispatchers.Main) {
-                                            downloadingDialog.dismiss()
-                                            delay(1000)
-                                            val dialog = BottomSheetDialog(
-                                                requireActivity(),
-                                                R.style.SheetDialog
+                                        lifecycleScope.launch(Dispatchers.Main) {
+                                            successDialog = BottomSheetDialog(
+                                                requireActivity(), R.style.SheetDialog
                                             )
-                                            dialog.setContentView(R.layout.dialog_download_success)
-                                            val btnOk = dialog.findViewById<Button>(R.id.btn_clear)
+
+                                            successDialog.setContentView(R.layout.dialog_download_success)
+                                            val btnOk =
+                                                successDialog.findViewById<Button>(R.id.btn_clear)
                                             val btnClose =
-                                                dialog.findViewById<ImageView>(R.id.ivCrossSuc)
+                                                successDialog.findViewById<ImageView>(R.id.ivCrossSuc)
                                             val adView =
-                                                dialog.findViewById<FrameLayout>(R.id.nativeViewAdSuccess)
-                                            dialog.behavior.isDraggable = false
-                                            dialog.setCanceledOnTouchOutside(false)
+                                                successDialog.findViewById<FrameLayout>(R.id.nativeViewAdSuccess)
+                                            successDialog.behavior.isDraggable = false
                                             if (showNatAd()) {
                                                 nativeAd = googleManager.createNativeAdSmall()
                                                 nativeAd?.let {
@@ -175,21 +216,16 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                                             }
 
                                             btnOk?.setOnClickListener {
-                                                dialog.dismiss()
-                                                showInterstitialAd {
-                                                    findNavController().navigate(
-                                                        HomeFragmentDirections.actionHomeFragmentToDownloadedFragment()
-                                                    )
+                                                successDialog.dismiss()
+                                                showInterstitialAd {}
 
-                                                }
                                             }
                                             btnClose?.setOnClickListener {
-                                                dialog.dismiss()
-                                                showInterstitialAd {
-                                                }
+                                                successDialog.dismiss()
+                                                showRewardedAd {}
                                             }
 
-                                            dialog.show()
+                                            successDialog.show()
                                         }
 
 
@@ -197,10 +233,10 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                                         val dialog = BottomSheetDialog(requireActivity())
                                         dialog.setContentView(R.layout.dialog_bottom_video_not_found)
                                         val btnOk = dialog.findViewById<Button>(R.id.btn_clear)
-
+                                        val btnCross = dialog.findViewById<ImageView>(R.id.ivCross)
                                         val adView =
                                             dialog.findViewById<FrameLayout>(R.id.nativeViewNot)
-                                        if (remoteConfig.nativeAd) {
+                                        if (remoteConfig.showDropDownAd) {
                                             nativeAd = googleManager.createNativeAdSmall()
                                             nativeAd?.let {
                                                 val nativeAdLayoutBinding =
@@ -215,13 +251,18 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                                         }
 
                                         dialog.behavior.isDraggable = false
-                                        dialog.setCanceledOnTouchOutside(false)
 
-                                        btnOk?.setOnClickListener {
-                                            showInterstitialAd {
-                                                dialog.dismiss()
-                                            }
+                                        btnCross?.setOnClickListener {
+                                            dialog.dismiss()
+                                            showInterstitialAd {}
+
                                         }
+                                        btnOk?.setOnClickListener {
+                                            dialog.dismiss()
+                                            showInterstitialAd {}
+
+                                        }
+
                                         dialog.show()
                                     }
 
@@ -241,22 +282,19 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     private fun initUI() {
         binding.apply {
             ivCross.setOnClickListener {
-                showInterstitialAd {
-                    etLink.text = null
-                }
+                etLink.text = null
+                showInterstitialAd {}
             }
 
             btnDownloaded.setOnClickListener {
-                showInterstitialAd {
-                    findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToDownloadedFragment())
-                }
+                findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToDownloadedFragment())
+
             }
 
             btnSetting.setOnClickListener {
-                showInterstitialAd {
-                    findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSettingFragment())
-                }
+                findNavController().navigate(HomeFragmentDirections.actionHomeFragmentToSettingFragment())
             }
+
             etLink.addTextChangedListener(object : TextWatcher {
                 override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                     if (s.toString().trim { it <= ' ' }.isEmpty()) {
@@ -270,8 +308,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 }
 
                 override fun beforeTextChanged(
-                    s: CharSequence, start: Int, count: Int,
-                    after: Int
+                    s: CharSequence, start: Int, count: Int, after: Int
                 ) {
                     Log.d("jejeText", "before")
                 }
@@ -283,6 +320,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
 
             btnDownload.setOnClickListener {
+                showInterstitialAd { }
                 val ll = etLink.text.toString().trim { it <= ' ' }
                 analytics.logEvent(
                     AnalyticsEvent.LINK(
@@ -293,8 +331,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     Utils.setToast(requireActivity(), resources.getString(R.string.enter_url))
                 } else if (!Patterns.WEB_URL.matcher(ll).matches()) {
                     Utils.setToast(
-                        requireActivity(),
-                        resources.getString(R.string.enter_valid_url)
+                        requireActivity(), resources.getString(R.string.enter_valid_url)
                     )
                 } else {
                     if (ll.isNotEmpty() && ll.contains("tiktok")) {
@@ -302,7 +339,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                             val dialog = BottomSheetDialog(requireContext(), R.style.SheetDialog)
                             dialog.setContentView(R.layout.layout_progress_dialog)
                             val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewAdDownload)
-                            if (remoteConfig.nativeAd) {
+                            if (remoteConfig.showDropDownAd) {
                                 nativeAd = googleManager.createNativeAdSmall()
                                 nativeAd?.let {
                                     val nativeAdLayoutBinding =
@@ -324,17 +361,9 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                         }
 
                     } else Toast.makeText(
-                        requireActivity(),
-                        "Enter Valid Url!!",
-                        Toast.LENGTH_SHORT
+                        requireActivity(), "Enter Valid Url!!", Toast.LENGTH_SHORT
                     ).show()
                 }
-
-                analytics.logEvent(
-                    AnalyticsEvent.BTNDownload(
-                        status = "Clicked"
-                    )
-                )
             }
         }
     }
@@ -345,7 +374,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             dialog.setContentView(R.layout.dialog_bottom_start_download)
             val videoQualityTv = dialog.findViewById<Button>(R.id.btn_clear)
             val adView = dialog.findViewById<FrameLayout>(R.id.nativeViewAdDownload)
-            if (remoteConfig.nativeAd) {
+            if (remoteConfig.showDropDownAd) {
                 nativeAd = googleManager.createNativeAdSmall()
                 nativeAd?.let {
                     val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
@@ -359,7 +388,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             dialog.behavior.isDraggable = false
             dialog.setCanceledOnTouchOutside(false)
             videoQualityTv?.setOnClickListener {
-                showInterstitialAd {
+                showRewardedAd {
                     dialog.dismiss()
                     myViewModel.getVideoData(link)
                 }
@@ -374,11 +403,11 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     }
 
     fun showNatAd(): Boolean {
-        return remoteConfig.nativeAd
+        return remoteConfig.showDropDownAd
     }
 
     private fun showNativeAd() {
-        if (remoteConfig.nativeAd) {
+        if (remoteConfig.showDropDownAd) {
             nativeAd = googleManager.createNativeAdSmall()
             nativeAd?.let {
                 val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
@@ -391,28 +420,64 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
     }
 
     private fun showInterstitialAd(callback: () -> Unit) {
+        if (remoteConfig.showInterstitial) {
 
-        val ad: InterstitialAd? =
-            googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 
-        if (ad == null) {
-            callback.invoke()
-            return
+            val ad: InterstitialAd? =
+                googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
+
+            if (ad == null) {
+                Log.d("jeje_inter_null", "null")
+                callback.invoke()
+                return
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                    override fun onAdDismissedFullScreenContent() {
+                        super.onAdDismissedFullScreenContent()
+                        Log.d("jeje_ondismiss", "null")
+                        callback.invoke()
+                    }
+
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
+                        Log.d("jeje_inter_fail", "null")
+                        callback.invoke()
+                    }
+                }
+                ad.show(requireActivity())
+            }
         } else {
-            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                override fun onAdDismissedFullScreenContent() {
-                    super.onAdDismissedFullScreenContent()
-                    callback.invoke()
+            callback.invoke()
+        }
+
+    }
+
+    private fun showRewardedAd(callback: () -> Unit) {
+        if (remoteConfig.showDropDownAd) {
+            if (!requireActivity().isConnected()) {
+                callback.invoke()
+                return
+            }
+            val ad: RewardedAd? = googleManager.createRewardedAd()
+
+            if (ad == null) {
+                callback.invoke()
+            } else {
+                ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+
+                    override fun onAdFailedToShowFullScreenContent(error: AdError) {
+                        super.onAdFailedToShowFullScreenContent(error)
+                        callback.invoke()
+                    }
                 }
 
-                override fun onAdFailedToShowFullScreenContent(error: AdError) {
-                    super.onAdFailedToShowFullScreenContent(error)
+                ad.show(requireActivity()) {
                     callback.invoke()
                 }
             }
-            ad.show(activity)
+        } else {
+            callback.invoke()
         }
-
     }
 
     private fun showDropDown() {
@@ -437,5 +502,25 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             }
             binding.btnDropUp.visibility = View.INVISIBLE
         }
+    }
+
+    private fun showRecursiveAds() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (this.isActive) {
+                    showNativeAd()
+                    if (remoteConfig.showDropDownAd) {
+                        showNativeAd()
+                        showDropDown()
+                    }
+                    delay(30000L)
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        successDialog.dismiss()
     }
 }

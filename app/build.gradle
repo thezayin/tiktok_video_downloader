@@ -18,8 +18,8 @@ android {
         applicationId "com.bluelock.tiktokdownloader"
         minSdk 24
         targetSdk 33
-        versionCode 3
-        versionName "0.0.3"
+        versionCode 9
+        versionName "1.0.9"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -121,4 +121,6 @@ dependencies {
     //Glide
     implementation 'com.github.bumptech.glide:glide:4.14.1'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.14.1'
+
+    implementation "com.applovin:applovin-sdk:11.11.1"
 }

@@ -12,11 +12,6 @@ private val rootPath =
             "Tiktok Download"
 val rootFile = File(rootPath)
 
-//enum class State{
-//    EXIST,
-//    COMPLETE,
-//    FAILED
-//}
 open class State {
     data class COMPLETE(val path: String = "") : State()
     object FAILED : State()

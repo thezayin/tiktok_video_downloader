@@ -6,12 +6,15 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.bluelock.tiktokdownloader.R
 import com.bluelock.tiktokdownloader.databinding.FragmentSettingBinding
 import com.bluelock.tiktokdownloader.remote.RemoteConfig
 import com.bluelock.tiktokdownloader.ui.base.BaseFragment
+import com.bluelock.tiktokdownloader.util.isConnected
 import com.example.ads.GoogleManager
 import com.example.ads.databinding.MediumNativeAdLayoutBinding
 import com.example.ads.databinding.NativeAdBannerLayoutBinding
@@ -24,6 +27,8 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.nativead.NativeAd
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -47,13 +52,8 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
 
     override fun onCreatedView() {
         observer()
-        showNativeAd()
-        showDropDown()
-        if (remoteConfig.showTitle) {
-            binding.textView.visibility = View.VISIBLE
-        } else {
-            binding.textView.visibility = View.INVISIBLE
-        }
+        showRecursiveAds()
+        getAppOpenAd()
     }
 
     private fun observer() {
@@ -62,7 +62,9 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                 btnBack.setOnClickListener {
                     findNavController().navigateUp()
                 }
+
                 lTerm.setOnClickListener {
+                    showInterstitialAd { }
                     val intent = Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse("https://bluelocksolutions.blogspot.com/2023/06/terms-and-conditions-for-tiktok.html")
@@ -70,6 +72,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     startActivity(intent)
                 }
                 lPrivacy.setOnClickListener {
+                    showInterstitialAd { }
                     val intent = Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse("https://bluelocksolutions.blogspot.com/2023/06/tiktok-downloader.html")
@@ -78,6 +81,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                 }
 
                 lContact.setOnClickListener {
+                    showInterstitialAd { }
                     val emailIntent = Intent(
                         Intent.ACTION_SENDTO,
                         Uri.parse("mailto:blue.lock.testing@gamail.com")
@@ -87,6 +91,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
                     startActivity(Intent.createChooser(emailIntent, "Chooser Title"))
                 }
                 lShare.setOnClickListener {
+                    showInterstitialAd { }
                     try {
                         val shareIntent = Intent(Intent.ACTION_SEND)
                         shareIntent.type = "text/plain"
@@ -107,13 +112,8 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
         }
     }
 
-
-    fun showNatAd(): Boolean {
-        return remoteConfig.nativeAd
-    }
-
     private fun showInterstitialAd(callback: () -> Unit) {
-        if (remoteConfig.showInterstitial) {
+        if (remoteConfig.showDropDownAd) {
             val ad: InterstitialAd? =
                 googleManager.createInterstitialAd(GoogleInterstitialType.MEDIUM)
 
@@ -141,7 +141,7 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
 
 
     private fun showNativeAd() {
-        if (remoteConfig.nativeAd) {
+        if (remoteConfig.showDropDownAd) {
             nativeAd = googleManager.createNativeAdSmall()
             nativeAd?.let {
                 val nativeAdLayoutBinding = NativeAdBannerLayoutBinding.inflate(layoutInflater)
@@ -178,8 +178,44 @@ class SettingFragment : BaseFragment<FragmentSettingBinding>() {
         }
     }
 
+    private fun showRecursiveAds() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (this.isActive) {
+                    showNativeAd()
+                    if (remoteConfig.showDropDownAd) {
+                        showNativeAd()
+                        showDropDown()
+                        showInterstitialAd { }
+                    }
+                    delay(40000L)
+                }
+            }
+        }
+    }
+
+    private fun getAppOpenAd(): Boolean {
+
+        if (!requireActivity().isConnected()) return false
+        val ad = googleManager.createAppOpenAd() ?: return false
+
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                super.onAdDismissedFullScreenContent()
+            }
+
+            override fun onAdFailedToShowFullScreenContent(p0: AdError) {
+                super.onAdFailedToShowFullScreenContent(p0)
+            }
+        }
+        ad.show(requireActivity())
+        return true
+
+        return false
+    }
+
     override fun onDestroyedView() {
-        showInterstitialAd { }
+//        showInterstitialAd { }
     }
 
 }

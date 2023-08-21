@@ -20,6 +20,20 @@
         android:theme="@style/Theme.TiktokVideoDownloader"
         tools:replace="android:fullBackupContent"
         tools:targetApi="31">
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+        <meta-data android:name="applovin.sdk.key"
+            android:value="qH5QuMDI8UBpePV0SReInPerw0WqiPVi3mkzC0X6x8bCpLZNsAoMGQvzKKrBd1KXDOoOOhMklSPUlmrEaMNhA8"/>
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9507635869843997~7847537871" />
         <activity
             android:name=".ui.activities.SplashActivity"
             android:exported="true">
